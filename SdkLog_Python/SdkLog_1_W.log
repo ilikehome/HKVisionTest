@@ -1,0 +1,10 @@
+[2024-11-04 16:25:04.970][ERR] CCoreGlobalCtrlBase::LoadDSo, HPR_LoadDSo Failed, Path[C:/Users/ilikehome/PycharmProjects/HKVisonTest/lib/zlib1.dll] syserror[126]
+[2024-11-04 16:25:04.970][ERR] Load zlib failed[syserr: 126]
+[2024-11-04 16:25:04.970][INF] The COM:HCCoreBase ver is 6.1.4.15, 2020_03_05. Async:1.
+[2024-11-04 16:25:04.970][INF] The COM:Core ver is 6.1.9.48, 2023_04_10. Async:1.
+[2024-11-04 16:25:04.970][INF] This HCNetSDK ver is 6.1.9.48 Ver 2023_04_10.
+[2024-11-04 16:25:04.970][INF] Login dev 10.9.137.22:8000.
+[2024-11-04 16:25:04.970][INF] dwTotalNum[2048]
+[2024-11-04 16:25:08.479][ERR] Private connect 10.9.137.22:8000 sock=2460 this=0x5153d444 cmd=0x10000 sys_err=10060, timeout= 3500 port=0
+[2024-11-04 16:25:08.479][ERR] [10.9.137.22:8000]LogonDevice Link_CreateLink fail[7].
+[2024-11-04 16:25:08.479][ERR] CMemberMgrBase::AllocIndex2, MemberStart Failed, iIndex[0]
