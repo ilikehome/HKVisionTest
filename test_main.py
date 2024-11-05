@@ -1,4 +1,5 @@
 # coding=utf-8
+import ctypes
 import time
 
 from HCNetSDK import *
@@ -35,7 +36,7 @@ class devClass:
         # 设置HCNetSDKCom组件库和SSL库加载路径
         if sys_platform == 'windows':
             basePath = os.getcwd().encode('gbk')
-            strPath = basePath + b'\\lib'
+            strPath = basePath + b'\\lib\\win'
             sdk_ComPath = NET_DVR_LOCAL_SDK_PATH()
             sdk_ComPath.sPath = strPath
             print('strPath: ', strPath)
@@ -50,7 +51,7 @@ class devClass:
                 print('NET_DVR_SetSDKInitCfg: 4 Succ')
         else:
             basePath = os.getcwd().encode('utf-8')
-            strPath = basePath + b'\\lib'
+            strPath = basePath + b'\\lib\\armlinux'
             sdk_ComPath = NET_DVR_LOCAL_SDK_PATH()
             sdk_ComPath.sPath = strPath
             if self.hikSDK.NET_DVR_SetSDKInitCfg(NET_SDK_INIT_CFG_TYPE.NET_SDK_INIT_CFG_SDK_PATH.value,
@@ -135,7 +136,7 @@ class devClass:
 
     def RealDataCallBack_V30(self, lPlayHandle, dwDataType, pBuffer, dwBufSize, pUser):
         # 码流回调函数
-        if sys_platform == 'linux':
+        if sys_platform == 'xx':
             # 码流回调函数
             if dwDataType == NET_DVR_SYSHEAD:
                 from datetime import datetime
@@ -147,17 +148,18 @@ class devClass:
                 self.writeFile(self.preview_file, pBuffer, dwBufSize)
             else:
                 print(u'其他数据,长度:', dwBufSize)
-        elif sys_platform == 'windows':
+        elif sys_platform == 'linux' or sys_platform == 'windows':
             if dwDataType == NET_DVR_SYSHEAD:
                 # 设置流播放模式
                 self.playM4SDK.PlayM4_SetStreamOpenMode(self.PlayCtrlPort, 0)
                 # 打开码流，送入40字节系统头数据
                 if self.playM4SDK.PlayM4_OpenStream(self.PlayCtrlPort, pBuffer, dwBufSize, 1024 * 1024):
                     # 设置解码回调，可以返回解码后YUV视频数据
-                    self.FuncDecCB = DECCBFUNWIN(self.DecCBFun)
-                    self.playM4SDK.PlayM4_SetDecCallBackExMend(self.PlayCtrlPort, self.FuncDecCB, None, 0, None)
+                    #self.FuncDecCB = DECCBFUNWIN(self.DecCBFun) #by shenhao
+                    #self.playM4SDK.PlayM4_SetDecCallBackExMend(self.PlayCtrlPort, self.FuncDecCB, None, 0, None) #by shenhao
                     # 开始解码播放
-                    if self.playM4SDK.PlayM4_Play(self.PlayCtrlPort, self.wincv.winfo_id()):
+                    if self.playM4SDK.PlayM4_Play(self.PlayCtrlPort, None):
+                    #if self.playM4SDK.PlayM4_Play(self.PlayCtrlPort, self.wincv.winfo_id()):
                         print(u'播放库播放成功')
                     else:
                         print(u'播放库播放失败')
@@ -165,6 +167,25 @@ class devClass:
                     print(f'播放库打开流失败, 错误码：{self.playM4SDK.PlayM4_GetLastError(self.PlayCtrlPort)}')
             elif dwDataType == NET_DVR_STREAMDATA:
                 self.playM4SDK.PlayM4_InputData(self.PlayCtrlPort, pBuffer, dwBufSize)
+
+                #shenhao test
+                p_width = ctypes.c_int(0)
+                p_height = ctypes.c_int(0)
+                if not self.playM4SDK.PlayM4_GetPictureSize(self.PlayCtrlPort, ctypes.byref(p_width), ctypes.byref(p_height)):
+                    print(f'获取PlayM4_GetPictureSize失败, 错误码：{self.playM4SDK.PlayM4_GetLastError(self.PlayCtrlPort)}')
+                print(f"PlayM4_GetPictureSize value: {p_width.value} , {p_height.value}")
+
+                pic_buff_size = p_width.value*p_height.value*5
+                jpeg_buffer = (ctypes.c_ubyte * pic_buff_size)()
+                real_pic_size = ctypes.c_int(0)
+                result = self.playM4SDK.PlayM4_GetJPEG(self.PlayCtrlPort, jpeg_buffer, pic_buff_size, ctypes.byref(real_pic_size))
+                if result == 1:
+                    print(f"PlayM4_GetJPEG value: {real_pic_size.value} ")
+                    print(jpeg_buffer[:real_pic_size.value])
+                else:
+                    print(f'抓图PlayM4_GetJPEG失败, 错误码：{self.playM4SDK.PlayM4_GetLastError(self.PlayCtrlPort)}')
+
+
             else:
                 print(u'其他数据,长度:', dwBufSize)
 
@@ -173,7 +194,7 @@ class devClass:
         if not self.playM4SDK.PlayM4_GetPort(byref(self.PlayCtrlPort)):
             print(f'获取播放库句柄失败, 错误码：{self.playM4SDK.PlayM4_GetLastError(self.PlayCtrlPort)}')
 
-        if sys_platform == 'linux':
+        if sys_platform == 'windows' or sys_platform == 'linux' :
             # 开始预览
             preview_info = NET_DVR_PREVIEWINFO()
             preview_info.hPlayWnd = 0
@@ -195,7 +216,7 @@ class devClass:
                 exit()
             time.sleep(playTime)
 
-        elif sys_platform == 'windows':
+        elif sys_platform == 'xx':
             import tkinter
             from tkinter import Button
 
@@ -267,6 +288,8 @@ if __name__ == '__main__':
     dev.LoginDev(ip=b'169.254.43.56', username=b"admin", pwd=b"tongda2024")  # 登录设备
 
     dev.startPlay(playTime=5)  # playTime用于linux环境控制预览时长，windows环境无效
+    time.sleep(10)
+
     dev.stopPlay()
     dev.LogoutDev()
     # 释放资源
