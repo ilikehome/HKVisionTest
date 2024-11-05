@@ -155,11 +155,10 @@ class devClass:
                 # 打开码流，送入40字节系统头数据
                 if self.playM4SDK.PlayM4_OpenStream(self.PlayCtrlPort, pBuffer, dwBufSize, 1024 * 1024):
                     # 设置解码回调，可以返回解码后YUV视频数据
-                    #self.FuncDecCB = DECCBFUNWIN(self.DecCBFun) #by shenhao
-                    #self.playM4SDK.PlayM4_SetDecCallBackExMend(self.PlayCtrlPort, self.FuncDecCB, None, 0, None) #by shenhao
+                    # self.FuncDecCB = DECCBFUNWIN(self.DecCBFun) #by shenhao
+                    # self.playM4SDK.PlayM4_SetDecCallBackExMend(self.PlayCtrlPort, self.FuncDecCB, None, 0, None) #by shenhao
                     # 开始解码播放
                     if self.playM4SDK.PlayM4_Play(self.PlayCtrlPort, None):
-                    #if self.playM4SDK.PlayM4_Play(self.PlayCtrlPort, self.wincv.winfo_id()):
                         print(u'播放库播放成功')
                     else:
                         print(u'播放库播放失败')
@@ -168,24 +167,28 @@ class devClass:
             elif dwDataType == NET_DVR_STREAMDATA:
                 self.playM4SDK.PlayM4_InputData(self.PlayCtrlPort, pBuffer, dwBufSize)
 
-                #shenhao test
                 p_width = ctypes.c_int(0)
                 p_height = ctypes.c_int(0)
-                if not self.playM4SDK.PlayM4_GetPictureSize(self.PlayCtrlPort, ctypes.byref(p_width), ctypes.byref(p_height)):
+                if not self.playM4SDK.PlayM4_GetPictureSize(self.PlayCtrlPort, ctypes.byref(p_width),
+                                                             ctypes.byref(p_height)):
                     print(f'获取PlayM4_GetPictureSize失败, 错误码：{self.playM4SDK.PlayM4_GetLastError(self.PlayCtrlPort)}')
-                print(f"PlayM4_GetPictureSize value: {p_width.value} , {p_height.value}")
+                print(f"PlayM4_GetPictureSize value: {p_width.value}, {p_height.value}")
 
-                pic_buff_size = p_width.value*p_height.value*5
+                pic_buff_size = p_width.value * p_height.value * 5
                 jpeg_buffer = (ctypes.c_ubyte * pic_buff_size)()
                 real_pic_size = ctypes.c_int(0)
-                result = self.playM4SDK.PlayM4_GetJPEG(self.PlayCtrlPort, jpeg_buffer, pic_buff_size, ctypes.byref(real_pic_size))
+                result = self.playM4SDK.PlayM4_GetJPEG(self.PlayCtrlPort, jpeg_buffer, pic_buff_size,
+                                                        ctypes.byref(real_pic_size))
                 if result == 1:
-                    print(f"PlayM4_GetJPEG value: {real_pic_size.value} ")
-                    print(jpeg_buffer[:real_pic_size.value])
+                    print(f"PlayM4_GetJPEG value: {real_pic_size.value}")
+
+                    # 保存为 JPEG 文件
+                    img_filename = f'pic/image_{time.time()}.jpg'
+                    with open(img_filename, 'wb') as f:
+                        f.write(bytes(jpeg_buffer[:real_pic_size.value]))
+
                 else:
                     print(f'抓图PlayM4_GetJPEG失败, 错误码：{self.playM4SDK.PlayM4_GetLastError(self.PlayCtrlPort)}')
-
-
             else:
                 print(u'其他数据,长度:', dwBufSize)
 
@@ -194,7 +197,7 @@ class devClass:
         if not self.playM4SDK.PlayM4_GetPort(byref(self.PlayCtrlPort)):
             print(f'获取播放库句柄失败, 错误码：{self.playM4SDK.PlayM4_GetLastError(self.PlayCtrlPort)}')
 
-        if sys_platform == 'windows' or sys_platform == 'linux' :
+        if sys_platform == 'windows' or sys_platform == 'linux':
             # 开始预览
             preview_info = NET_DVR_PREVIEWINFO()
             preview_info.hPlayWnd = 0
