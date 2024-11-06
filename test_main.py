@@ -1,14 +1,15 @@
 # coding=utf-8
 import ctypes
 import time
-
+import traceback
+import logging
 from HCNetSDK import *
 from PlayCtrl import *
 
 
-class devClass:
+class HkConnector:
     def __init__(self):
-        self.hikSDK, self.playM4SDK = self.LoadSDK()  # 加载sdk库
+        self.hikSDK, self.playM4SDK = self.load_sdk()  # 加载sdk库
         self.iUserID = -1  # 登录句柄
         self.lRealPlayHandle = -1  # 预览句柄
         self.FuncDecCB = None  # 解码回调
@@ -17,50 +18,62 @@ class devClass:
         self.preview_file = ''
         self.funcRealDataCallBack_V30 = REALDATACALLBACK(self.RealDataCallBack_V30)  # 预览回调函数
 
-    def LoadSDK(self):
-        hikSDK = None
-        playM4SDK = None
+    def load_sdk(self):
+        hik_sdk = None
+        play_m4_sdk = None
         try:
-            hikSDK = load_library(netsdkdllpath)
-            playM4SDK = load_library(playM4dllpath)
+            hik_sdk = load_library(netsdkdllpath)
+            play_m4_sdk = load_library(playM4dllpath)
         except OSError as e:
             print('动态库加载失败', e)
-        return hikSDK, playM4SDK
+        return hik_sdk, play_m4_sdk
 
-    def SetSDKInitCfg(self):
+    def init_dll(self):
         if sys_platform == 'windows':
-            basePath = os.getcwd().encode('gbk')
-            strPath = basePath + b'\\lib\\win'
-            sdk_ComPath = NET_DVR_LOCAL_SDK_PATH()
-            sdk_ComPath.sPath = strPath
-            print('strPath: ', strPath)
+            base_path = os.getcwd().encode('gbk')
+            str_path = base_path + b'\\lib\\win'
+            sdk_com_path = NET_DVR_LOCAL_SDK_PATH()
+            sdk_com_path.sPath = str_path
+            print('str_path: ', str_path)
             if self.hikSDK.NET_DVR_SetSDKInitCfg(NET_SDK_INIT_CFG_TYPE.NET_SDK_INIT_CFG_SDK_PATH.value,
-                                                 byref(sdk_ComPath)):
-                print('NET_DVR_SetSDKInitCfg: 2 Succ')
+                                                 byref(sdk_com_path)):
+                logging.info("NET_DVR_SetSDKInitCfg: 2 success.")
+            else:
+                logging.error("NET_DVR_SetSDKInitCfg: 2 failed!")
             if self.hikSDK.NET_DVR_SetSDKInitCfg(NET_SDK_INIT_CFG_TYPE.NET_SDK_INIT_CFG_LIBEAY_PATH.value,
-                                                 create_string_buffer(strPath + b'\\libcrypto-1_1-x64.dll')):
-                print('NET_DVR_SetSDKInitCfg: 3 Succ')
+                                                 create_string_buffer(str_path + b'\\libcrypto-1_1-x64.dll')):
+                logging.info("NET_DVR_SetSDKInitCfg: 3 success.")
+            else:
+                logging.error("NET_DVR_SetSDKInitCfg: 3 failed!")
             if self.hikSDK.NET_DVR_SetSDKInitCfg(NET_SDK_INIT_CFG_TYPE.NET_SDK_INIT_CFG_SSLEAY_PATH.value,
-                                                 create_string_buffer(strPath + b'\\libssl-1_1-x64.dll')):
-                print('NET_DVR_SetSDKInitCfg: 4 Succ')
+                                                 create_string_buffer(str_path + b'\\libssl-1_1-x64.dll')):
+                logging.info("NET_DVR_SetSDKInitCfg: 4 success.")
+            else:
+                logging.error("NET_DVR_SetSDKInitCfg: 4 failed!")
         else:
-            basePath = os.getcwd().encode('utf-8')
-            strPath = basePath + b'\\lib\\armlinux'
-            sdk_ComPath = NET_DVR_LOCAL_SDK_PATH()
-            sdk_ComPath.sPath = strPath
+            base_path = os.getcwd().encode('utf-8')
+            str_path = base_path + b'\\lib\\armlinux'
+            sdk_com_path = NET_DVR_LOCAL_SDK_PATH()
+            sdk_com_path.sPath = str_path
             if self.hikSDK.NET_DVR_SetSDKInitCfg(NET_SDK_INIT_CFG_TYPE.NET_SDK_INIT_CFG_SDK_PATH.value,
-                                                 byref(sdk_ComPath)):
-                print('NET_DVR_SetSDKInitCfg: 2 Succ')
+                                                 byref(sdk_com_path)):
+                logging.info("NET_DVR_SetSDKInitCfg: 2 success.")
+            else:
+                logging.error("NET_DVR_SetSDKInitCfg: 2 failed!")
             if self.hikSDK.NET_DVR_SetSDKInitCfg(NET_SDK_INIT_CFG_TYPE.NET_SDK_INIT_CFG_LIBEAY_PATH.value,
-                                                 create_string_buffer(strPath + b'/libcrypto.so.1.1')):
-                print('NET_DVR_SetSDKInitCfg: 3 Succ')
+                                                 create_string_buffer(str_path + b'/libcrypto.so.1.1')):
+                logging.info("NET_DVR_SetSDKInitCfg: 3 success.")
+            else:
+                logging.error("NET_DVR_SetSDKInitCfg: 3 failed!")
             if self.hikSDK.NET_DVR_SetSDKInitCfg(NET_SDK_INIT_CFG_TYPE.NET_SDK_INIT_CFG_SSLEAY_PATH.value,
-                                                 create_string_buffer(strPath + b'/libssl.so.1.1')):
-                print('NET_DVR_SetSDKInitCfg: 4 Succ')
-        self.basePath = basePath
+                                                 create_string_buffer(str_path + b'/libssl.so.1.1')):
+                logging.info("NET_DVR_SetSDKInitCfg: 4 success.")
+            else:
+                logging.error("NET_DVR_SetSDKInitCfg: 4 failed!")
+        self.basePath = base_path
 
-    def GeneralSetting(self):
-        self.hikSDK.NET_DVR_SetLogToFile(3, bytes('./SdkLog_Python/', encoding="utf-8"), False)
+    def hk_log_setting(self):
+        self.hikSDK.NET_DVR_SetLogToFile(3, bytes('./hk_camera_log/', encoding="utf-8"), False)
 
     # 登录设备
     def LoginDev(self, ip, username, pwd):
@@ -153,10 +166,10 @@ class devClass:
 
 
 if __name__ == '__main__':
-    dev = devClass()
-    dev.SetSDKInitCfg()  # 设置SDK初始化依赖库路径
+    dev = HkConnector()
+    dev.init_dll()  # 设置SDK初始化依赖库路径
     dev.hikSDK.NET_DVR_Init()  # 初始化sdk
-    dev.GeneralSetting()  # 通用设置，日志，回调函数等
+    dev.hk_log_setting()  # 通用设置，日志，回调函数等
     dev.LoginDev(ip=b'169.254.43.56', username=b"admin", pwd=b"tongda2024")  # 登录设备
 
     dev.start_play()  # playTime用于linux环境控制预览时长，windows环境无效
