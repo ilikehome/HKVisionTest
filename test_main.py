@@ -107,28 +107,32 @@ class HkConnector:
                 logging.error(f'播放库打开流失败, 错误码：{str(self.playM4SDK.PlayM4_GetLastError(self.PlayCtrlPort))}')
         elif dwDataType == NET_DVR_STREAMDATA:
             self.playM4SDK.PlayM4_InputData(self.PlayCtrlPort, pBuffer, dwBufSize)
-
-            p_width = ctypes.c_int(0)
-            p_height = ctypes.c_int(0)
-            if not self.playM4SDK.PlayM4_GetPictureSize(self.PlayCtrlPort, ctypes.byref(p_width), ctypes.byref(p_height)):
-                logging.error(f'获取PlayM4_GetPictureSize失败, 错误码：{str(self.playM4SDK.PlayM4_GetLastError(self.PlayCtrlPort))}')
-            print(f"PlayM4_GetPictureSize value: {p_width.value}, {p_height.value}")
-
-            pic_buff_size = p_width.value * p_height.value * 5
-            jpeg_buffer = (ctypes.c_ubyte * pic_buff_size)()
-            real_pic_size = ctypes.c_int(0)
-            result = self.playM4SDK.PlayM4_GetJPEG(self.PlayCtrlPort, jpeg_buffer, pic_buff_size, ctypes.byref(real_pic_size))
-            if result == 1:
-                # 保存为 JPEG 文件
-                img_filename = f'pic/image_{time.time()}.jpg'
-                with open(img_filename, 'wb') as f:
-                    f.write(bytes(jpeg_buffer[:real_pic_size.value]))
-
-            else:
-                logging.error(
-                    f'抓图PlayM4_GetJPEG失败, 错误码：{str(self.playM4SDK.PlayM4_GetLastError(self.PlayCtrlPort))}')
         else:
             pass
+
+    def get_frame(self):
+        p_width = ctypes.c_int(0)
+        p_height = ctypes.c_int(0)
+        if not self.playM4SDK.PlayM4_GetPictureSize(self.PlayCtrlPort, ctypes.byref(p_width), ctypes.byref(p_height)):
+            logging.error(f'获取PlayM4_GetPictureSize失败, 错误码：{str(self.playM4SDK.PlayM4_GetLastError(self.PlayCtrlPort))}')
+        print(f"PlayM4_GetPictureSize value: {p_width.value}, {p_height.value}")
+        pic_buff_size = p_width.value * p_height.value * 5
+        jpeg_buffer = (ctypes.c_ubyte * pic_buff_size)()
+        real_pic_size = ctypes.c_int(0)
+        result = self.playM4SDK.PlayM4_GetJPEG(self.PlayCtrlPort, jpeg_buffer, pic_buff_size, ctypes.byref(real_pic_size))
+
+        pic_bits = None
+        if result == 1:
+            pic_bits = bytes(jpeg_buffer[:real_pic_size.value])
+            # 保存为 JPEG 文件
+            img_filename = f'pic/image_{time.time()}.jpg'
+            with open(img_filename, 'wb') as f:
+                f.write(pic_bits)
+        else:
+            logging.error(
+                f'抓图PlayM4_GetJPEG失败, 错误码：{str(self.playM4SDK.PlayM4_GetLastError(self.PlayCtrlPort))}')
+
+        return pic_bits
 
     def start_play(self):
         # 获取一个播放句柄
@@ -160,6 +164,7 @@ if __name__ == '__main__':
     dev.hikSDK.NET_DVR_Init()  # 初始化sdk
     dev.hk_log_setting()  # 通用设置，日志，回调函数等
     dev.login_dev(ip=b'169.254.43.56', username=b"admin", pwd=b"tongda2024")  # 登录设备
-
-    dev.start_play()  # playTime用于linux环境控制预览时长，windows环境无效
+    dev.start_play()
+    time.sleep(5)
+    dev.get_frame()
     time.sleep(20)
