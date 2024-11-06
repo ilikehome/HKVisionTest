@@ -41,14 +41,17 @@ class HkConnector:
                 logging.info("NET_DVR_SetSDKInitCfg: 2 success.")
             else:
                 logging.error("NET_DVR_SetSDKInitCfg: 2 failed!")
+                return False
             if self.hikSDK.NET_DVR_SetSDKInitCfg(NET_SDK_INIT_CFG_TYPE.NET_SDK_INIT_CFG_LIBEAY_PATH.value, create_string_buffer(str_path + b'\\libcrypto-1_1-x64.dll')):
                 logging.info("NET_DVR_SetSDKInitCfg: 3 success.")
             else:
                 logging.error("NET_DVR_SetSDKInitCfg: 3 failed!")
+                return False
             if self.hikSDK.NET_DVR_SetSDKInitCfg(NET_SDK_INIT_CFG_TYPE.NET_SDK_INIT_CFG_SSLEAY_PATH.value, create_string_buffer(str_path + b'\\libssl-1_1-x64.dll')):
                 logging.info("NET_DVR_SetSDKInitCfg: 4 success.")
             else:
                 logging.error("NET_DVR_SetSDKInitCfg: 4 failed!")
+                return False
         else:
             base_path = os.getcwd().encode('utf-8')
             str_path = base_path + b'\\lib\\armlinux'
@@ -58,15 +61,19 @@ class HkConnector:
                 logging.info("NET_DVR_SetSDKInitCfg: 2 success.")
             else:
                 logging.error("NET_DVR_SetSDKInitCfg: 2 failed!")
+                return False
             if self.hikSDK.NET_DVR_SetSDKInitCfg(NET_SDK_INIT_CFG_TYPE.NET_SDK_INIT_CFG_LIBEAY_PATH.value, create_string_buffer(str_path + b'/libcrypto.so.1.1')):
                 logging.info("NET_DVR_SetSDKInitCfg: 3 success.")
             else:
                 logging.error("NET_DVR_SetSDKInitCfg: 3 failed!")
+                return False
             if self.hikSDK.NET_DVR_SetSDKInitCfg(NET_SDK_INIT_CFG_TYPE.NET_SDK_INIT_CFG_SSLEAY_PATH.value, create_string_buffer(str_path + b'/libssl.so.1.1')):
                 logging.info("NET_DVR_SetSDKInitCfg: 4 success.")
             else:
                 logging.error("NET_DVR_SetSDKInitCfg: 4 failed!")
+                return False
         self.basePath = base_path
+        return True
 
     def hk_log_setting(self):
         self.hikSDK.NET_DVR_SetLogToFile(3, bytes('./hk_sdk_log/', encoding="utf-8"), False)
@@ -89,8 +96,10 @@ class HkConnector:
         if self.iUserID < 0:
             logging.error(f"Login failed, error code: {str(self.hikSDK.NET_DVR_GetLastError())}")
             self.hikSDK.NET_DVR_Cleanup()
+            return False
         else:
             logging.info(f"登录摄像头成功，设备序列号： {str(strut_device_info_v40.struDeviceV30.sSerialNumber, encoding="utf8").rstrip('\x00')}")
+        return True
 
     def RealDataCallBack_V30(self, lPlayHandle, dwDataType, pBuffer, dwBufSize, pUser):
         if dwDataType == NET_DVR_SYSHEAD:
@@ -129,8 +138,7 @@ class HkConnector:
             with open(img_filename, 'wb') as f:
                 f.write(pic_bits)
         else:
-            logging.error(
-                f'抓图PlayM4_GetJPEG失败, 错误码：{str(self.playM4SDK.PlayM4_GetLastError(self.PlayCtrlPort))}')
+            logging.error(f'抓图PlayM4_GetJPEG失败, 错误码：{str(self.playM4SDK.PlayM4_GetLastError(self.PlayCtrlPort))}')
 
         return pic_bits
 
@@ -138,6 +146,7 @@ class HkConnector:
         # 获取一个播放句柄
         if not self.playM4SDK.PlayM4_GetPort(byref(self.PlayCtrlPort)):
             logging.error(f'获取播放库句柄失败, 错误码：{str(self.playM4SDK.PlayM4_GetLastError(self.PlayCtrlPort))}')
+            return False
 
         # 开始预览
         preview_info = NET_DVR_PREVIEWINFO()
@@ -155,7 +164,9 @@ class HkConnector:
             self.hikSDK.NET_DVR_Logout(self.iUserID)
             # 释放资源
             self.hikSDK.NET_DVR_Cleanup()
-            exit()
+            return False
+
+        return True
 
 
 if __name__ == '__main__':

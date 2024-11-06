@@ -10,7 +10,7 @@ from enum import Enum
 def system_get_platform_info():
     sys_platform = platform.system().lower().strip()
     python_bit = platform.architecture()[0]
-    python_bit_num = re.findall('(\d+)\w*', python_bit)[0]
+    python_bit_num = re.findall(r'(\d+)\w*', python_bit)[0]
     return sys_platform, python_bit_num
 
 
