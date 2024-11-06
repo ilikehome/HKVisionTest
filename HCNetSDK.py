@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-# @Time : 2024/8/6 16:31
-# @Author : sdk007
 
 import os
 import platform
@@ -26,7 +24,7 @@ elif sys_platform == 'windows':
     load_library = windll.LoadLibrary
     fun_ctype = WINFUNCTYPE
 else:
-    print("************不支持的平台**************")
+    print("Not Supported OS!")
     exit(0)
 
 netsdkdllpath_dict = {'windows64': os.path.dirname(__file__) + '\\lib\\win\\' + 'HCNetSDK.dll',

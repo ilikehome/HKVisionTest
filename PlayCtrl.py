@@ -5,6 +5,7 @@ from ctypes import *
 
 from HCNetSDK import sys_platform, system_type, C_DWORD
 
+#实际只支持armlinux
 if sys_platform == 'linux':
     load_library = cdll.LoadLibrary
     fun_ctype = CFUNCTYPE
@@ -12,7 +13,7 @@ elif sys_platform == 'windows':
     load_library = windll.LoadLibrary
     fun_ctype = WINFUNCTYPE
 else:
-    print("************不支持的平台**************")
+    print("Not Supported OS!")
     exit(0)
 
 playM4dllpath_dict = {'windows64': os.path.dirname(__file__) + '\\lib\\win\\' + 'PlayCtrl.dll',
